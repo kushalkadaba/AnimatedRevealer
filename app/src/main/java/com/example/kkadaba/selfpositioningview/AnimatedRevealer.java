@@ -17,16 +17,18 @@ import android.util.AttributeSet;
 import android.util.Property;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
+import android.widget.FrameLayout;
 
 /**
+ *
  * @author Kushal Kadaba(Fuzz).
  */
 
-public class AnimatedRevealer extends View implements Animatable {
+public class AnimatedRevealer extends FrameLayout implements Animatable {
 
     private static final long ANIMATION_DURATION = 500;
-    private static final int HORIZONTAL = 0;
-    private static final int VERTICAL = 1;
+    public static final int HORIZONTAL = 0;
+    public static final int VERTICAL = 1;
     String[] options;
     private int measuredHeight;
     Matrix transformMatrix;
@@ -38,15 +40,25 @@ public class AnimatedRevealer extends View implements Animatable {
             new Property<AnimatedRevealer, Float>(Float.class, "xTranslation") {
                 @Override
                 public Float get(AnimatedRevealer object) {
-                    return object.xTranslation;
+                    return object.getXTranslation();
                 }
 
                 @Override
                 public void set(AnimatedRevealer object, Float value) {
-                    object.xTranslation = value;
-                    object.invalidate();
+                    object.setXTranslation(value);
                 }
             };
+
+    public void setXTranslation(Float value) {
+        this.xTranslation = value;
+        setWillNotDraw(false);
+        invalidate();
+    }
+
+    public float getXTranslation() {
+        return xTranslation;
+    }
+
     private int measuredWidth;
     private Bitmap rootView;
     private ObjectAnimator animator;
@@ -98,14 +110,6 @@ public class AnimatedRevealer extends View implements Animatable {
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         measuredHeight = h;
         measuredWidth = w;
-        if (!isReveal) {
-            createBitmapsBasedOnOrientation(w, h);
-        }
-
-    }
-
-    private void createBitmapsBasedOnOrientation(int w, int h) {
-
     }
 
     @Override
@@ -115,6 +119,7 @@ public class AnimatedRevealer extends View implements Animatable {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
         if (rootView == null) {
             View view = getRootView().findViewById(rootLayoutId);
             if (view != null) {
@@ -138,8 +143,13 @@ public class AnimatedRevealer extends View implements Animatable {
                 translateAndDraw(canvas);
             }
             canvas.restore();
+            setWillNotDraw(true);
             if (shouldAnimate) {
                 shouldAnimate = false;
+                View view = getRootView().findViewById(rootLayoutId);
+                if (view != null) {
+                    view.setVisibility(View.GONE);
+                }
                 animator.start();
             }
         }
@@ -198,9 +208,10 @@ public class AnimatedRevealer extends View implements Animatable {
         }
     }
 
+    // TODO: 12/27/16 Remove this method.
     private void clearCanvas(Canvas canvas) {
-        paint.setColor(Color.WHITE);
-        canvas.drawRect(new RectF(0f, 0f, (float) measuredWidth, (float) measuredHeight), paint);
+//        paint.setColor(Color.WHITE);
+//        canvas.drawRect(new RectF(0f, 0f, (float) measuredWidth, (float) measuredHeight), paint);
     }
 
     @Override
@@ -209,6 +220,8 @@ public class AnimatedRevealer extends View implements Animatable {
         animator.setDuration(ANIMATION_DURATION);
         animator.setInterpolator(new AccelerateInterpolator());
         shouldAnimate = true;
+        setWillNotDraw(false);
+        postInvalidate();
     }
 
     private float getEndValue() {
@@ -225,11 +238,28 @@ public class AnimatedRevealer extends View implements Animatable {
     public void stop() {
         if (animator.isRunning()) {
             animator.cancel();
+            setWillNotDraw(true);
         }
     }
 
     @Override
     public boolean isRunning() {
         return animator.isRunning();
+    }
+
+    public int getOrientation() {
+        return orientation;
+    }
+
+    public boolean isReveal() {
+        return isReveal;
+    }
+
+    public void setOrientation(int orientation) {
+        this.orientation = orientation;
+    }
+
+    public void setReveal(boolean reveal) {
+        this.isReveal = reveal;
     }
 }
