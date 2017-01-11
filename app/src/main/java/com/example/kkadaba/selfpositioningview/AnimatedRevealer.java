@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.RectF;
@@ -50,13 +49,17 @@ public class AnimatedRevealer extends FrameLayout implements Animatable {
             };
 
     public void setXTranslation(Float value) {
-        this.xTranslation = value;
+        this.xTranslation = mapToActualValue(value);
         setWillNotDraw(false);
         invalidate();
     }
 
+    private float mapToActualValue(Float value) {
+        return value * (getEndValue());
+    }
+
     public float getXTranslation() {
-        return xTranslation;
+        return xTranslation / getEndValue();
     }
 
     private int measuredWidth;
@@ -131,7 +134,6 @@ public class AnimatedRevealer extends FrameLayout implements Animatable {
             canvas.save();
             if (isReveal) {
                 configureClipRect();
-                clearCanvas(canvas);
                 canvas.clipRect(clipRect, Region.Op.DIFFERENCE);
                 canvas.drawBitmap(rootView, transformMatrix, paint);
             } else {
@@ -139,7 +141,6 @@ public class AnimatedRevealer extends FrameLayout implements Animatable {
                     copyOnToBitmapBasedOnOrientation(rootView);
                     bitmapCopied = true;
                 }
-                clearCanvas(canvas);
                 translateAndDraw(canvas);
             }
             canvas.restore();
@@ -208,15 +209,9 @@ public class AnimatedRevealer extends FrameLayout implements Animatable {
         }
     }
 
-    // TODO: 12/27/16 Remove this method.
-    private void clearCanvas(Canvas canvas) {
-//        paint.setColor(Color.WHITE);
-//        canvas.drawRect(new RectF(0f, 0f, (float) measuredWidth, (float) measuredHeight), paint);
-    }
-
     @Override
     public void start() {
-        animator = ObjectAnimator.ofFloat(this, translationProp, 0, getEndValue());
+        animator = ObjectAnimator.ofFloat(this, translationProp, 0, 1);
         animator.setDuration(ANIMATION_DURATION);
         animator.setInterpolator(new AccelerateInterpolator());
         shouldAnimate = true;

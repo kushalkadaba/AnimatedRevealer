@@ -93,4 +93,8 @@
     <string name="reveal">Reveal</string>
     <string name="horizontal">Horizontal</string>
     <string name="vertical">Vertical</string>
+    <string name="back">Back</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
