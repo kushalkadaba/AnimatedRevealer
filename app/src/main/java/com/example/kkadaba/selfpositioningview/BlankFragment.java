@@ -5,12 +5,15 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
 
 import static com.example.kkadaba.selfpositioningview.AnimatedRevealer.HORIZONTAL;
 import static com.example.kkadaba.selfpositioningview.AnimatedRevealer.VERTICAL;
@@ -62,7 +65,6 @@ public class BlankFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setExitTransition(new BitmapCutTransition());
         if (getArguments() != null) {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
@@ -73,12 +75,28 @@ public class BlankFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.content_scrolling, container, false);
+        View view = inflater.inflate(R.layout.content_scrolling, container, false);
+        layout = (AnimatedRevealer) view.findViewById(R.id.revealView);
+        return view;
     }
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
-        layout = (AnimatedRevealer) view.findViewById(R.id.revealView);
+    }
+
+    @Override
+    public Animation onCreateAnimation(int transit, boolean enter, int nextAnim) {
+        if (!enter) {
+            AlphaAnimation alphaAnimation = new AlphaAnimation(1,1);
+            alphaAnimation.setDuration(500);
+            layout.start();
+            return alphaAnimation;
+        } else if (getFragmentManager().getBackStackEntryCount() < ((ScrollingActivity) getActivity()).getPrevCount()) {
+            AlphaAnimation alphaAnimation = new AlphaAnimation(1,1);
+            alphaAnimation.setDuration(500);
+            layout.start(true);
+        }
+        return super.onCreateAnimation(transit, enter, nextAnim);
     }
 
     @Override

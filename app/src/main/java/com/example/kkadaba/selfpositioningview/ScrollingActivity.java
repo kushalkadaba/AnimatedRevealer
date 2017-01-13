@@ -2,6 +2,7 @@ package com.example.kkadaba.selfpositioningview;
 
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
@@ -14,6 +15,8 @@ import static com.example.kkadaba.selfpositioningview.AnimatedRevealer.VERTICAL;
 
 public class ScrollingActivity extends AppCompatActivity {
     FloatingActionButton fab;
+    private int prevCount;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -25,7 +28,6 @@ public class ScrollingActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FrameLayout container = (FrameLayout) findViewById(R.id.include_content);
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.include_content, BlankFragment.newInstance(null, null),"BlankFragment1")
                 .commit();
@@ -36,20 +38,25 @@ public class ScrollingActivity extends AppCompatActivity {
             public void onClick(View view) {
                 getSupportFragmentManager().beginTransaction()
                         .replace(R.id.include_content, SecondFragment.newInstance(null, null))
+                        .addToBackStack(null)
                         .commit();
                 view.setTag(true);
+            }
+        });
+        getSupportFragmentManager().addOnBackStackChangedListener(new FragmentManager.OnBackStackChangedListener() {
+            @Override
+            public void onBackStackChanged() {
+                prevCount = getSupportFragmentManager().getBackStackEntryCount();
             }
         });
     }
 
     @Override
     public void onBackPressed() {
-        if (fab.getTag() != null && (boolean)fab.getTag()) {
+        super.onBackPressed();
+    }
 
-            init();
-            fab.setTag(false);
-        } else {
-            super.onBackPressed();
-        }
+    public int getPrevCount() {
+        return prevCount;
     }
 }

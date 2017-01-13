@@ -1,16 +1,20 @@
 package com.example.kkadaba.selfpositioningview;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Region;
 import android.graphics.drawable.Animatable;
 import android.os.Build;
+import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.util.AttributeSet;
 import android.util.Property;
@@ -19,7 +23,6 @@ import android.view.animation.AccelerateInterpolator;
 import android.widget.FrameLayout;
 
 /**
- *
  * @author Kushal Kadaba(Fuzz).
  */
 
@@ -122,14 +125,13 @@ public class AnimatedRevealer extends FrameLayout implements Animatable {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
         if (rootView == null) {
-            View view = getRootView().findViewById(rootLayoutId);
-            if (view != null) {
-                rootView = view.getDrawingCache();
-                view.setDrawingCacheEnabled(true);
+            super.onDraw(canvas);
+            if (!isDrawingCacheEnabled()) {
+                setDrawingCacheEnabled(true);
+                rootView = getDrawingCache();
+                invalidate();
             }
-            invalidate();
         } else {
             canvas.save();
             if (isReveal) {
@@ -147,9 +149,8 @@ public class AnimatedRevealer extends FrameLayout implements Animatable {
             setWillNotDraw(true);
             if (shouldAnimate) {
                 shouldAnimate = false;
-                View view = getRootView().findViewById(rootLayoutId);
-                if (view != null) {
-                    view.setVisibility(View.GONE);
+                for (int i = 0; i < getChildCount(); i++) {
+                    getChildAt(i).setVisibility(View.INVISIBLE);
                 }
                 animator.start();
             }
@@ -157,6 +158,7 @@ public class AnimatedRevealer extends FrameLayout implements Animatable {
     }
 
     private void translateAndDraw(Canvas canvas) {
+        canvas.save();
         switch (orientation) {
             case HORIZONTAL:
                 float midWay = getHeight() / 2f;
@@ -182,12 +184,12 @@ public class AnimatedRevealer extends FrameLayout implements Animatable {
         int h = rootView.getHeight();
         switch (orientation) {
             case HORIZONTAL:
-                bitmap1 = Bitmap.createBitmap(rootView,0, 0, w, h / 2);
-                bitmap2 = Bitmap.createBitmap(rootView, 0, h / 2, w, h/2);
+                bitmap1 = Bitmap.createBitmap(rootView, 0, 0, w, h / 2);
+                bitmap2 = Bitmap.createBitmap(rootView, 0, h / 2, w, h / 2);
                 break;
             case VERTICAL:
                 bitmap1 = Bitmap.createBitmap(rootView, 0, 0, w / 2, h);
-                bitmap2 = Bitmap.createBitmap(rootView, w / 2, 0, w/ 2, h);
+                bitmap2 = Bitmap.createBitmap(rootView, w / 2, 0, w / 2, h);
                 break;
         }
     }
@@ -211,12 +213,58 @@ public class AnimatedRevealer extends FrameLayout implements Animatable {
 
     @Override
     public void start() {
-        animator = ObjectAnimator.ofFloat(this, translationProp, 0, 1);
+        start(false);
+    }
+
+    /**
+     * Use this if fragment is being popped from back stack
+     *
+     * @param isReverse - if true the float values go from 1 to 0;
+     * @see {@link #start(ObjectAnimator)} {@link #start()}
+     */
+    public void start(boolean isReverse) {
+        ObjectAnimator animator;
+        if (isReverse) {
+            animator = ObjectAnimator.ofFloat(this, translationProp, 1, 0);
+        } else {
+            animator = ObjectAnimator.ofFloat(this, translationProp, 0, 1);
+        }
+        animator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                for (int i = 0; i < getChildCount(); i++) {
+                    getChildAt(i).setVisibility(VISIBLE);
+                }
+            }
+        });
         animator.setDuration(ANIMATION_DURATION);
         animator.setInterpolator(new AccelerateInterpolator());
+        start(animator);
+    }
+
+    /**
+     * Use this if you want to change anything on the animator.
+     *
+     * @param animator - Object animator for {@link #xTranslation}
+     * @see {@link #start(boolean)}
+     * @see {@link #start()}
+     */
+    public void start(@NonNull ObjectAnimator animator) {
+        this.animator = animator;
         shouldAnimate = true;
         setWillNotDraw(false);
-        postInvalidate();
+        animator.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                setDrawingCacheEnabled(false);
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                setDrawingCacheEnabled(false);
+            }
+        });
+        invalidate();
     }
 
     private float getEndValue() {
