@@ -126,11 +126,15 @@ public class AnimatedRevealer extends FrameLayout implements Animatable {
     @Override
     protected void onDraw(Canvas canvas) {
         if (rootView == null) {
-            super.onDraw(canvas);
             if (!isDrawingCacheEnabled()) {
                 setDrawingCacheEnabled(true);
                 rootView = getDrawingCache();
-                invalidate();
+                for (int i = 0; i < getChildCount(); i++) {
+                    getChildAt(i).setVisibility(View.INVISIBLE);
+                }
+                animator.start();
+            } else {
+                super.onDraw(canvas);
             }
         } else {
             canvas.save();
@@ -147,13 +151,6 @@ public class AnimatedRevealer extends FrameLayout implements Animatable {
             }
             canvas.restore();
             setWillNotDraw(true);
-            if (shouldAnimate) {
-                shouldAnimate = false;
-                for (int i = 0; i < getChildCount(); i++) {
-                    getChildAt(i).setVisibility(View.INVISIBLE);
-                }
-                animator.start();
-            }
         }
     }
 
@@ -226,6 +223,7 @@ public class AnimatedRevealer extends FrameLayout implements Animatable {
         ObjectAnimator animator;
         if (isReverse) {
             animator = ObjectAnimator.ofFloat(this, translationProp, 1, 0);
+            setInitialXTranslation(1);
         } else {
             animator = ObjectAnimator.ofFloat(this, translationProp, 0, 1);
         }
@@ -242,6 +240,10 @@ public class AnimatedRevealer extends FrameLayout implements Animatable {
         start(animator);
     }
 
+    private void setInitialXTranslation(float value) {
+        xTranslation = mapToActualValue(value);
+    }
+
     /**
      * Use this if you want to change anything on the animator.
      *
@@ -256,15 +258,22 @@ public class AnimatedRevealer extends FrameLayout implements Animatable {
         animator.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
-                setDrawingCacheEnabled(false);
+                reset();
             }
 
             @Override
             public void onAnimationCancel(Animator animation) {
-                setDrawingCacheEnabled(false);
+                reset();
             }
         });
         invalidate();
+    }
+
+    private void reset() {
+        setDrawingCacheEnabled(false);
+        setWillNotDraw(true);
+        rootView = null;
+        bitmapCopied = false;
     }
 
     private float getEndValue() {
